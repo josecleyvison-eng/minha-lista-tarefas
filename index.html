@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>To-Do List Profissional</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* 1. Reset Básico */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      /* 2. O Fundo da Página */
+      body {
+        background: linear-gradient(
+          120deg,
+          #84fab0 0%,
+          #8fd3f4 100%
+        ); /* Degradê azul/verde */
+        height: 100vh;
+        display: flex;
+        justify-content: center; /* Centraliza na horizontal */
+        align-items: center; /* Centraliza na vertical */
+      }
+
+      /* 3. O Card Branco (A caixa principal) */
+      .container {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Sombra suave */
+        width: 100%;
+        max-width: 450px; /* Largura máxima */
+      }
+
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+        font-weight: 600;
+      }
+
+      /* 4. A área de digitar (Input + Botão) */
+      .controles {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+      }
+
+      input[type="text"] {
+        flex-grow: 1;
+        padding: 12px;
+        border: 2px solid #eee;
+        border-radius: 8px;
+        outline: none;
+        transition: 0.3s;
+      }
+
+      input[type="text"]:focus {
+        border-color: #84fab0; /* Cor da borda quando clica */
+      }
+
+      /* 5. Estilo geral dos botões */
+      button {
+        border: none;
+        border-radius: 8px;
+        padding: 10px 15px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: transform 0.2s, opacity 0.2s; /* Animação */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      button:active {
+        transform: scale(0.95);
+      } /* Efeito de clique */
+      button:hover {
+        opacity: 0.9;
+      }
+
+      button.add {
+        background: #00d2d3;
+        width: 50px;
+        font-size: 1.2rem;
+      }
+      button.edit {
+        background: #ff9f43;
+        margin-right: 5px;
+      }
+      button.delete {
+        background: #ff6b6b;
+      }
+
+      /* 6. A Lista de Tarefas */
+      ul {
+        list-style: none;
+      }
+
+      li {
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: 0.3s;
+      }
+
+      li:hover {
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        transform: translateX(5px); /* Move um pouquinho p/ direita */
+      }
+
+      /* Checkbox customizado */
+      input[type="checkbox"] {
+        margin-right: 15px;
+        transform: scale(1.3);
+        cursor: pointer;
+        accent-color: #00d2d3; /* Cor do check */
+      }
+
+      span {
+        flex-grow: 1;
+        font-size: 0.95rem;
+        color: #555;
+      }
+
+      .riscado {
+        text-decoration: line-through;
+        color: #ccc;
+      }
+
+      .acoes {
+        display: flex;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Minhas Tarefas</h1>
+
+      <div class="controles">
+        <input
+          type="text"
+          id="texto-tarefa"
+          placeholder="O que vamos fazer hoje?"
+        />
+        <button class="add" onclick="adicionarTarefa()">+</button>
+      </div>
+
+      <ul id="lista-tarefas"></ul>
+    </div>
+
+    <script>
+      async function carregarTarefas() {
+        const resposta = await fetch("http://localhost:3000/tarefas");
+        const tarefas = await resposta.json();
+
+        const lista = document.getElementById("lista-tarefas");
+        lista.innerHTML = "";
+
+        tarefas.forEach((tarefa) => {
+          const item = document.createElement("li");
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = tarefa.feita;
+          checkbox.onclick = () =>
+            atualizarTarefa(tarefa.id, { feita: !tarefa.feita });
+
+          const span = document.createElement("span");
+          span.innerText = tarefa.descricao;
+          if (tarefa.feita) span.classList.add("riscado");
+
+          const divBotoes = document.createElement("div");
+          divBotoes.className = "acoes";
+
+          const btnEditar = document.createElement("button");
+          btnEditar.innerText = "✎";
+          btnEditar.className = "edit";
+          btnEditar.onclick = () => {
+            const novoTexto = prompt("Edite a tarefa:", tarefa.descricao);
+            if (novoTexto && novoTexto !== tarefa.descricao) {
+              atualizarTarefa(tarefa.id, { descricao: novoTexto });
+            }
+          };
+
+          const btnExcluir = document.createElement("button");
+          btnExcluir.innerText = "🗑"; // Ícone de lixeira
+          btnExcluir.className = "delete";
+          btnExcluir.onclick = () => deletarTarefa(tarefa.id);
+
+          divBotoes.appendChild(btnEditar);
+          divBotoes.appendChild(btnExcluir);
+
+          item.appendChild(checkbox);
+          item.appendChild(span);
+          item.appendChild(divBotoes);
+          lista.appendChild(item);
+        });
+      }
+
+      async function adicionarTarefa() {
+        const input = document.getElementById("texto-tarefa");
+        const valor = input.value;
+        if (!valor) return;
+
+        await fetch("http://localhost:3000/tarefas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ descricao: valor }),
+        });
+
+        input.value = "";
+        carregarTarefas();
+      }
+
+      async function atualizarTarefa(id, dadosParaAtualizar) {
+        await fetch(`http://localhost:3000/tarefas/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dadosParaAtualizar),
+        });
+        carregarTarefas();
+      }
+
+      async function deletarTarefa(id) {
+        await fetch(`http://localhost:3000/tarefas/${id}`, {
+          method: "DELETE",
+        });
+        carregarTarefas();
+      }
+
+      carregarTarefas();
+    </script>
+  </body>
+</html>
